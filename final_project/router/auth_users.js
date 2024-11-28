@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
 const regd_users = express.Router();
 
+
 let users = [];
 
 const isValid = (username) => {
@@ -46,37 +47,69 @@ regd_users.post("/login", (req, res) => {
     }
 });
 
-// Add a book review
-regd_users.put("/auth/review/:isbn", (req, res) => {
-    const isbn = req.params.isbn; // Get the ISBN from the request parameters
-    const { review } = req.query; // Retrieve the review text from the request query
-    const { username } = req.user; // Assuming username is stored in the session via JWT middleware
+// User Registration Endpoint
+regd_users.post("/register", (req, res) => {
+    const { username, password } = req.body;
+    // Registration logic...
+});
 
-    // Validate that a review was provided
+// User Login Endpoint
+regd_users.post("/customer/login", (req, res) => {
+    const { username, password } = req.body;
+    // Authentication logic...
+});
+
+// Add or modify a book review
+regd_users.put("/auth/review/:isbn", authenticateToken, (req, res) => {
+    const isbn = req.params.isbn; // Get the ISBN from the request parameters
+    const { review } = req.body; // Extract review from the body
+    const username = req.user.username; // Get username from the authenticated user
+
     if (!review) {
-        return res.status(400).json({ message: "Review text is required" });
+        return res.status(400).json({ message: "Review text is required." });
     }
 
-    // Find the book by ISBN
     const book = books.find(b => b.isbn === isbn);
     if (!book) {
-        return res.status(404).json({ message: "Book not found" });
+        return res.status(404).json({ message: "Book not found." });
     }
 
     // Check if the user has already reviewed the book
     const existingReviewIndex = book.reviews.findIndex(r => r.username === username);
 
     if (existingReviewIndex !== -1) {
-        // If the review exists, update it
-        book.reviews[existingReviewIndex].review = review; // Update the existing review
-        return res.status(200).json({ message: "Review updated successfully", reviews: book.reviews });
+        // Update existing review
+        book.reviews[existingReviewIndex].review = review;
+        return res.status(200).json({ message: "Review updated successfully!", reviews: book.reviews });
     } else {
-        // If the review does not exist, add a new one
-        book.reviews.push({ username, review }); // Add new review
-        return res.status(201).json({ message: "Review added successfully", reviews: book.reviews });
+        // Add new review
+        book.reviews.push({ username, review });
+        return res.status(201).json({ message: "Review added successfully!", reviews: book.reviews });
+    }
+});
+
+regd_users.delete("/auth/review/:isbn", authenticateToken, (req, res) => {
+    const isbn = req.params.isbn; // Get the ISBN from the request parameters
+    const username = req.user.username; // Get the username from the authenticated user
+
+    const book = books.find(b => b.isbn === isbn);
+    if (!book) {
+        return res.status(404).json({ message: "Book not found." });
+    }
+
+    // Find the index of the review by this user
+    const reviewIndex = book.reviews.findIndex(r => r.username === username);
+
+    if (reviewIndex !== -1) {
+        // Remove the review from the array
+        book.reviews.splice(reviewIndex, 1);
+        return res.status(200).json({ message: "Review deleted successfully!", reviews: book.reviews });
+    } else {
+        return res.status(404).json({ message: "Review not found." });
     }
 });
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
+
