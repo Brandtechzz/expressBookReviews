@@ -37,37 +37,77 @@ regd_users.post("/login", (req, res) => {
     return res.status(200).json({ message: "Login successful!", token });
 });
 
-// Add a book review
+// Add or modify a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-    const { username } = req.body; // Assuming you send the username as part of the body or extract from JWT later
-    const isbn = req.params.isbn; // Retrieve the ISBN from the request parameters
-    const { review } = req.body; // Extract the review from the request body
+    const isbn = req.params.isbn; // Get ISBN from URL parameters
+    const { username, review } = req.body; // Extract username and review from the body
 
-    // Validate input
-    if (!isbn || !review) {
-        return res.status(400).json({ message: "ISBN and review are required." });
+    if (!username || !review) {
+        return res.status(400).json({ message: "Username and review are required." });
     }
 
-    // Find the book by ISBN
-    const book = books[isbn]; // Access the book using the ISBN as a key
+    const book = books[isbn]; // Access the book data
+
+    if (!book) {
+        return res.status(404).json({ message: "Book not found." });
+    }
+
+    // If the reviews array doesn't exist, initialize it
+    if (!Array.isArray(book.reviews)) {
+        book.reviews = [];
+    }
+
+    // Check if review from the same user already exists
+    const existingReviewIndex = book.reviews.findIndex(r => r.username === username);
+
+    if (existingReviewIndex !== -1) {
+        // Modify the existing review
+        book.reviews[existingReviewIndex].text = review; // Update existing review
+        return res.status(200).json({ message: "Review updated successfully!", reviews: book.reviews });
+    } else {
+        // Add a new review
+        book.reviews.push({ username, text: review });
+        return res.status(201).json({ message: "Review added successfully!", reviews: book.reviews });
+    }
+});
+
+// Delete a book review
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const isbn = req.params.isbn; // Retrieve the ISBN from the request parameters
+    const username = req.body.username; // Assuming username is passed in the body (typically from session/token)
+
+    // Validate input
+    if (!username) {
+        return res.status(400).json({ message: "Username is required." });
+    }
+
+    const book = books[isbn]; // Access the book using the ISBN key
 
     // Check if the book exists
     if (!book) {
         return res.status(404).json({ message: "Book not found." });
     }
 
-    // Ensure reviews object exists
-    if (!book.reviews) {
-        book.reviews = [];
+    // Ensure the reviews array exists
+    if (!Array.isArray(book.reviews)) {
+        return res.status(404).json({ message: "No reviews found for this book." });
     }
 
-    // Add the review, assuming reviews are stored as an array of strings
-    book.reviews.push(review);
+    // Find the index of the review by the current user
+    const reviewIndex = book.reviews.findIndex(r => r.username === username);
+
+    if (reviewIndex === -1) {
+        return res.status(404).json({ message: "Review not found for this user." });
+    }
+
+    // Remove the review from the array
+    book.reviews.splice(reviewIndex, 1); // Remove the review
     
     // Respond with success message
-    return res.status(200).json({ message: "Review added successfully!", reviews: book.reviews });
+    return res.status(200).json({ message: "Review deleted successfully!", reviews: book.reviews });
 });
 
+// Export the router
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
