@@ -112,4 +112,3 @@ regd_users.delete("/auth/review/:isbn", authenticateToken, (req, res) => {
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
-
