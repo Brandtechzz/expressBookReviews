@@ -53,80 +53,64 @@ public_users.post("/login", (req, res) => {
     return res.status(200).json({ message: "Login successful!", token });
 });
 
-// Get the book list available in the shop
+const axios = require('axios'); // Import Axios
+
+// Define the route for fetching books
 public_users.get('/', function (req, res) {
-    // Return the list of books as JSON
-    res.status(200).json(books); // Alternatively: res.status(200).json(JSON.stringify(books));
-  });
+    axios.get('https://brandonburke-5000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai/books')
+        .then(function (response) {
+            // Successful response, send books as JSON
+            res.status(200).json(response.data);
+        })
+        .catch(function (error) {
+            // Handle error if the request fails
+            res.status(500).json({ message: 'Error retrieving books', error: error.message });
+        });
+});
 
 // Get book details based on ISBN (using object structure)
-public_users.get('/isbn/:isbn', function (req, res) {
-    // Retrieve the ISBN from the request parameters
-    const id = req.params.isbn; // Using the ISBN key directly
+public_users.get('/:isbn', function (req, res) {
+    const { isbn } = req.params; // Get the ISBN from the URL params
 
-    // Find the book in the object using the keys
-    const book = books[id];
-
-    // Check if the book exists
-    if (book) {
-        return res.status(200).json(book); // Return the book details if found
-    } else {
-        return res.status(404).json({ message: "Book not found" }); // Return an error if not found
-    }
+    axios.get(`https://brandonburke-5000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai/books/${isbn}`)
+        .then(function (response) {
+            // Successful response, send book details as JSON
+            res.status(200).json(response.data);
+        })
+        .catch(function (error) {
+            // Handle error if the request fails
+            res.status(500).json({ message: 'Error retrieving book details', error: error.message });
+        });
 });
   
 // Get book details based on author
-public_users.get('/author/:author', function (req, res) {
-    // Step 1: Retrieve the author name from the request parameters
-    const authorName = req.params.author.toLowerCase(); // Convert to lower case for case-insensitive matching
+public_users.get('/author/:authorName', function (req, res) {
+    const { authorName } = req.params; // Get the author name from the URL params
 
-    // Step 2: Initialize an array to hold matching books
-    let matchingBooks = [];
-
-    // Step 3: Iterate through the 'books' object and check if the author matches
-    for (const key in books) {
-        if (books.hasOwnProperty(key)) {
-            const book = books[key];
-            // Check if the author matches
-            if (book.author.toLowerCase() === authorName) {
-                matchingBooks.push(book); // Add the matching book to the array
-            }
-        }
-    }
-
-    // Step 4: Check if any books were found
-    if (matchingBooks.length > 0) {
-        return res.status(200).json(matchingBooks); // Return the matched books
-    } else {
-        return res.status(404).json({ message: "No books found for this author" }); // No books matching the author
-    }
+    axios.get(`https://brandonburke-5000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai/books/author/${authorName}`)
+        .then(function (response) {
+            // Successful response, send books by author as JSON
+            res.status(200).json(response.data);
+        })
+        .catch(function (error) {
+            // Handle error if the request fails
+            res.status(500).json({ message: 'Error retrieving books by author', error: error.message });
+        });
 });
 
 // Get book details based on title
 public_users.get('/title/:title', function (req, res) {
-    // Step 1: Retrieve the title from the request parameters
-    const bookTitle = req.params.title.toLowerCase(); // Convert to lower case for case-insensitive matching
+    const { title } = req.params; // Get the book title from the URL params
 
-    // Step 2: Initialize an array to hold matching books
-    let matchingBooks = [];
-
-    // Step 3: Iterate through the 'books' object and check if the title matches
-    for (const key in books) {
-        if (books.hasOwnProperty(key)) {
-            const book = books[key];
-            // Check if the title matches
-            if (book.title.toLowerCase().includes(bookTitle)) {
-                matchingBooks.push(book); // Add the matching book to the array
-            }
-        }
-    }
-
-    // Step 4: Check if any books were found
-    if (matchingBooks.length > 0) {
-        return res.status(200).json(matchingBooks); // Return the matched books
-    } else {
-        return res.status(404).json({ message: "No books found with that title" }); // No books matching the title
-    }
+    axios.get(`https://brandonburke-5000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai/books/title/${title}`)
+        .then(function (response) {
+            // Successful response, send book details as JSON
+            res.status(200).json(response.data);
+        })
+        .catch(function (error) {
+            // Handle error if the request fails
+            res.status(500).json({ message: 'Error retrieving book details by title', error: error.message });
+        });
 });
 
 // Get book reviews based on ISBN
